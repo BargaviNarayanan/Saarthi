@@ -3,6 +3,7 @@ uvicorn
 pytest
 pytest-cov
 httpx
+python-multipart
 google-cloud-dialogflow
 google-cloud-translate
 google-cloud-speech
