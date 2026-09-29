@@ -19,12 +19,12 @@ from pydantic import BaseModel, Field
 import uvicorn
 
 # Import custom modules
-from translation_manager import TranslationManager
-from voice_manager import SpeechToTextManager, TextToSpeechManager
-from vertex_ai_predictor import VertexAIServicePredictor
-from dialogflow_integration import DialogflowCXManager, DialogflowSessionManager
-from database import SaarthiDatabase
-from nlp_processor import MultilingualNLPProcessor
+from .integrations.translation import TranslationManager
+from .integrations.voice import SpeechToTextManager, TextToSpeechManager
+from .integrations.vertex_ai import VertexAIServicePredictor
+from .integrations.dialogflow import DialogflowCXManager, DialogflowSessionManager
+from .database.repository import SaarthiDatabase
+from .nlp.processor import MultilingualNLPProcessor
 
 # Configure logging
 logging.basicConfig(
@@ -987,7 +987,7 @@ async def shutdown_event():
 
 if __name__ == "__main__":
     uvicorn.run(
-        "integrated_main:app",
+        "app.main:app",
         host="0.0.0.0",
         port=8000,
         reload=True,
