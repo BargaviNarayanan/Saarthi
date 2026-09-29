@@ -8,3 +8,4 @@ numpy
 torchvision
 torchaudio
 transformers
+openai
