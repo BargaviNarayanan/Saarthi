@@ -22,7 +22,7 @@ jobs:
         run: python -m compileall -q src
         
       - name: Install dependencies
-        run: pip install -r config/requirements.txt 
+        run: pip install -r requirements.txt 
         
       - name: Run coverage
         run: pytest --cov=src --cov-report=xml
