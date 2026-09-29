@@ -1,62 +1,59 @@
-"""Dialogflow CX integration helpers."""
+"""Local mock for Dialogflow intent detection."""
 
 from __future__ import annotations
 
-import os
 from typing import Any
-from uuid import uuid4
-
-from google.cloud import dialogflowcx_v3
 
 
-def send_to_dialogflow(query: str) -> dict:
-    """Return a placeholder Dialogflow response for a citizen query."""
-    return {"intent": "demo", "response": "sample"}
+class DialogflowClient:
+    """Detect common government-service intents with local keyword matching."""
 
-
-class DialogflowCXClient:
-    """Small wrapper for sending text queries to a Dialogflow CX agent."""
-
-    def __init__(
-        self,
-        project_id: str | None = None,
-        location: str | None = None,
-        agent_id: str | None = None,
-    ) -> None:
-        self.project_id = project_id or os.environ["DIALOGFLOW_PROJECT_ID"]
-        self.location = location or os.getenv("DIALOGFLOW_LOCATION", "global")
-        self.agent_id = agent_id or os.environ["DIALOGFLOW_AGENT_ID"]
-        self.client = dialogflowcx_v3.SessionsClient()
+    _intents = {
+        "apply_birth_certificate": ("birth certificate", "birth", "born"),
+        "apply_driving_license": ("driving license", "driver license", "driving licence"),
+        "apply_passport": ("passport", "visa"),
+        "file_complaint": ("complaint", "grievance", "report an issue"),
+        "track_application": ("track", "application status", "status of"),
+    }
 
     def detect_intent(
         self,
         session_id: str,
         text: str,
-        language_code: str = "en",
+        language_code: str = "en-US",
     ) -> dict[str, Any]:
-        session = self.client.session_path(
-            project=self.project_id,
-            location=self.location,
-            agent=self.agent_id,
-            session=session_id,
+        """Return a local intent result with the same shape expected by the API."""
+        normalized_text = text.casefold()
+        intent = next(
+            (
+                name
+                for name, keywords in self._intents.items()
+                if any(keyword in normalized_text for keyword in keywords)
+            ),
+            "unknown",
         )
-        response = self.client.detect_intent(
-            request={
-                "session": session,
-                "query_input": {
-                    "text": {"text": text},
-                    "language_code": language_code,
-                },
-            }
-        )
-        result = response.query_result
-        messages = [
-            message.text.text[0]
-            for message in result.response_messages
-            if message.text and message.text.text
-        ]
-        return {
-            "intent": result.intent.display_name if result.intent else None,
-            "confidence": result.intent_detection_confidence,
-            "response": "\n".join(messages),
+        confidence = 0.85 if intent != "unknown" else 0.0
+        responses = {
+            "apply_birth_certificate": "I can help you apply for a birth certificate.",
+            "apply_driving_license": "I can help you with a driving license.",
+            "apply_passport": "I can help you with passport and travel services.",
+            "file_complaint": "I can help you register a complaint.",
+            "track_application": "I can help you track your application.",
+            "unknown": "How can I help with a government service?",
         }
+        return {
+            "intent": intent,
+            "confidence": confidence,
+            "response": responses[intent],
+            "session_id": session_id,
+            "language_code": language_code,
+        }
+
+
+DialogflowCXClient = DialogflowClient
+
+
+def send_to_dialogflow(query: str) -> dict[str, str]:
+    """Return a local Dialogflow-style response."""
+    result = DialogflowClient().detect_intent("default", query)
+    return {"intent": result["intent"], "response": result["response"]}

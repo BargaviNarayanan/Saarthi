@@ -1,34 +1,40 @@
-"""Vertex AI endpoint integration."""
+"""Local mock for Vertex AI predictions."""
 
 from __future__ import annotations
 
-import os
 from typing import Any
-
-from google.cloud import aiplatform
 
 
 class VertexAIClient:
-    """Client for invoking a deployed Vertex AI endpoint."""
+    """Provide deterministic service predictions without a cloud connection."""
 
-    def __init__(
-        self,
-        project_id: str | None = None,
-        location: str | None = None,
-        endpoint_id: str | None = None,
-    ) -> None:
-        self.project_id = project_id or os.environ["GCP_PROJECT_ID"]
-        self.location = location or os.getenv("GCP_LOCATION", "us-central1")
-        self.endpoint_id = endpoint_id or os.environ["VERTEX_ENDPOINT_ID"]
-        aiplatform.init(project=self.project_id, location=self.location)
-        self.endpoint = aiplatform.Endpoint(self.endpoint_id)
+    _categories = {
+        "vital_records": ("birth certificate", "death certificate", "marriage certificate"),
+        "transport": ("vehicle", "driving", "license", "registration"),
+        "social_welfare": ("ration", "pension", "welfare", "subsidy"),
+        "travel": ("passport", "visa", "travel"),
+        "grievance": ("complaint", "grievance", "problem", "issue"),
+        "tracking": ("track", "status", "application"),
+    }
 
     def predict(self, query: str, language: str = "en") -> dict[str, Any]:
-        """Return the deployed model's prediction for a citizen query."""
-        response = self.endpoint.predict(
-            instances=[{"text": query, "language": language}]
+        """Classify a query using local keyword matching."""
+        normalized_query = query.casefold()
+        category = next(
+            (
+                category
+                for category, keywords in self._categories.items()
+                if any(keyword in normalized_query for keyword in keywords)
+            ),
+            "general",
         )
         return {
-            "predictions": list(response.predictions),
-            "deployed_model_id": response.deployed_model_id,
+            "predictions": [
+                {
+                    "category": category,
+                    "confidence": 0.8 if category != "general" else 0.5,
+                }
+            ],
+            "deployed_model_id": "local-mock",
+            "language": language,
         }
