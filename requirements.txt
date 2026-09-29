@@ -7,3 +7,4 @@ python-multipart
 google-cloud-dialogflow
 google-cloud-translate
 google-cloud-speech
+google-cloud-texttospeech
