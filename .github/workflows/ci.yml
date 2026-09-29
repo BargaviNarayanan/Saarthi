@@ -19,4 +19,7 @@ jobs:
           python-version: "3.10"
 
       - name: Check backend syntax
-        run: python -m compileall -q backend/app
+        run: python -m compileall -q backend/app 
+        
+      - name: Run coverage
+        run: pytest --cov=src --cov-report=xml
