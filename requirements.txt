@@ -1,6 +1,8 @@
 fastapi
 uvicorn
 pytest
+pytest-cov
+httpx
 google-cloud-dialogflow
 google-cloud-translate
 google-cloud-speech
