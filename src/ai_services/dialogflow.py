@@ -4,16 +4,82 @@ from __future__ import annotations
 
 import os
 from typing import Any
+from uuid import uuid4
 
 from google.cloud import dialogflowcx_v3
 
 
 def send_to_dialogflow(query: str) -> dict:
-    """Send a citizen query to Dialogflow.
+    """Send a citizen query to Dialogflow CX and return its response.
 
-    This placeholder intentionally has no implementation yet.
+    Dialogflow configuration is read from environment variables:
+
+    * ``DIALOGFLOW_PROJECT_ID``
+    * ``DIALOGFLOW_AGENT_ID``
+    * ``DIALOGFLOW_LOCATION`` (optional, defaults to ``global``)
+    * ``DIALOGFLOW_LANGUAGE_CODE`` (optional, defaults to ``en``)
+
+    A new session is created for each call. For a multi-turn conversation,
+    use :class:`DialogflowCXClient` directly and reuse a session ID.
     """
-    pass
+    if not isinstance(query, str) or not query.strip():
+        raise ValueError("query must be a non-empty string")
+
+    query = query.strip()
+    project_id = os.getenv("DIALOGFLOW_PROJECT_ID")
+    agent_id = os.getenv("DIALOGFLOW_AGENT_ID")
+    location = os.getenv("DIALOGFLOW_LOCATION", "global")
+    language_code = os.getenv("DIALOGFLOW_LANGUAGE_CODE", "en")
+
+    missing = [
+        name
+        for name, value in (
+            ("DIALOGFLOW_PROJECT_ID", project_id),
+            ("DIALOGFLOW_AGENT_ID", agent_id),
+        )
+        if not value
+    ]
+    if missing:
+        raise RuntimeError(
+            "Missing Dialogflow configuration: " + ", ".join(missing)
+        )
+
+    client = dialogflowcx_v3.SessionsClient()
+    session_id = uuid4().hex
+    session = client.session_path(
+        project=project_id,
+        location=location,
+        agent=agent_id,
+        session=session_id,
+    )
+
+    response = client.detect_intent(
+        request={
+            "session": session,
+            "query_input": {
+                "text": {"text": query},
+                "language_code": language_code,
+            },
+        }
+    )
+
+    result = response.query_result
+    messages = [
+        text
+        for message in result.response_messages
+        if message.text
+        for text in message.text.text
+    ]
+
+    return {
+        "success": True,
+        "session_id": session_id,
+        "query": query,
+        "intent": result.intent.display_name if result.intent else None,
+        "confidence": float(result.intent_detection_confidence),
+        "response": "\n".join(messages),
+        "parameters": dict(result.parameters) if result.parameters else {},
+    }
 
 
 class DialogflowCXClient:
