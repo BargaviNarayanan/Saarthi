@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+pytest
+google-cloud-dialogflow
+google-cloud-translate
+google-cloud-speech
