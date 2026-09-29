@@ -1,4 +1,4 @@
-"""Dialogflow CX integration."""
+"""Dialogflow CX integration helpers."""
 
 from __future__ import annotations
 
@@ -6,6 +6,14 @@ import os
 from typing import Any
 
 from google.cloud import dialogflowcx_v3
+
+
+def send_to_dialogflow(query: str) -> dict:
+    """Send a citizen query to Dialogflow.
+
+    This placeholder intentionally has no implementation yet.
+    """
+    pass
 
 
 class DialogflowCXClient:
