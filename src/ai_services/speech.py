@@ -6,6 +6,7 @@ import os
 from typing import Any
 
 from google.cloud import speech_v1, texttospeech_v1
+from google.cloud import texttospeech
 
 
 class SpeechClient:
