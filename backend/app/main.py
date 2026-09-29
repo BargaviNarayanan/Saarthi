@@ -5,7 +5,6 @@ Provides unified REST API endpoints for frontend chatbot
 """
 
 import logging
-import os
 import json
 from typing import Dict, List, Optional
 from datetime import datetime
@@ -63,22 +62,12 @@ logger.info("="*80)
 logger.info("SAARTHI BACKEND INITIALIZATION")
 logger.info("="*80)
 
-# Get configuration from environment
-PROJECT_ID = os.getenv("GCP_PROJECT_ID", "your-project-id")
-LOCATION = os.getenv("GCP_LOCATION", "us-central1")
-VERTEX_ENDPOINT_ID = os.getenv("VERTEX_ENDPOINT_ID", "")
-DIALOGFLOW_AGENT_ID = os.getenv("DIALOGFLOW_AGENT_ID", "")
-CREDENTIALS_PATH = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
-
 # Initialize components
 components = {}
 
 try:
     logger.info("Initializing Translation Manager...")
     components['translator'] = TranslationManager(
-        project_id=PROJECT_ID,
-        credentials_path=CREDENTIALS_PATH if CREDENTIALS_PATH else None,
-        api_version="v3",
         cache_enabled=True
     )
     logger.info("✓ Translation Manager initialized")
@@ -88,10 +77,7 @@ except Exception as e:
 
 try:
     logger.info("Initializing Speech-to-Text Manager...")
-    components['stt'] = SpeechToTextManager(
-        project_id=PROJECT_ID,
-        credentials_path=CREDENTIALS_PATH if CREDENTIALS_PATH else None
-    )
+    components['stt'] = SpeechToTextManager()
     logger.info("✓ Speech-to-Text Manager initialized")
 except Exception as e:
     logger.error(f"⚠ Speech-to-Text Manager failed: {str(e)}")
@@ -99,45 +85,24 @@ except Exception as e:
 
 try:
     logger.info("Initializing Text-to-Speech Manager...")
-    components['tts'] = TextToSpeechManager(
-        project_id=PROJECT_ID,
-        credentials_path=CREDENTIALS_PATH if CREDENTIALS_PATH else None
-    )
+    components['tts'] = TextToSpeechManager()
     logger.info("✓ Text-to-Speech Manager initialized")
 except Exception as e:
     logger.error(f"⚠ Text-to-Speech Manager failed: {str(e)}")
     components['tts'] = None
 
 try:
-    logger.info("Initializing Vertex AI Predictor...")
-    if VERTEX_ENDPOINT_ID:
-        components['vertex_ai'] = VertexAIServicePredictor(
-            project_id=PROJECT_ID,
-            location=LOCATION,
-            endpoint_id=VERTEX_ENDPOINT_ID,
-            credentials_path=CREDENTIALS_PATH if CREDENTIALS_PATH else None
-        )
-        logger.info("✓ Vertex AI Predictor initialized")
-    else:
-        logger.info("⚠ Vertex AI Endpoint ID not configured, will use fallback")
-        components['vertex_ai'] = None
+    logger.info("Initializing local Vertex AI mock...")
+    components['vertex_ai'] = VertexAIServicePredictor()
+    logger.info("Local Vertex AI mock initialized")
 except Exception as e:
     logger.error(f"⚠ Vertex AI Predictor failed: {str(e)}")
     components['vertex_ai'] = None
 
 try:
-    logger.info("Initializing Dialogflow CX Manager...")
-    if DIALOGFLOW_AGENT_ID:
-        components['dialogflow'] = DialogflowCXManager(
-            project_id=PROJECT_ID,
-            location=LOCATION,
-            agent_id=DIALOGFLOW_AGENT_ID,
-            credentials_path=CREDENTIALS_PATH if CREDENTIALS_PATH else None
-        )
-        logger.info("✓ Dialogflow CX Manager initialized")
-    else:
-        logger.info("⚠ Dialogflow Agent ID not configured")
-        components['dialogflow'] = None
+    logger.info("Initializing local Dialogflow mock...")
+    components['dialogflow'] = DialogflowCXManager()
+    logger.info("Local Dialogflow mock initialized")
 except Exception as e:
     logger.error(f"⚠ Dialogflow CX Manager failed: {str(e)}")
     components['dialogflow'] = None
@@ -581,13 +546,11 @@ async def process_voice_query(
         if not stt:
             raise HTTPException(status_code=503, detail="Speech-to-Text unavailable")
         
-        # Save uploaded audio
-        audio_path = f"/tmp/voice_query_{datetime.utcnow().timestamp()}.wav"
-        with open(audio_path, "wb") as f:
-            f.write(await audio_file.read())
-        
         # Step 1: Transcribe audio
-        transcription = stt.transcribe_audio_file(audio_path, language)
+        transcription = stt.transcribe_audio_bytes(
+            await audio_file.read(),
+            language,
+        )
         
         if not transcription.get("success"):
             raise HTTPException(status_code=400, detail="Could not transcribe audio")

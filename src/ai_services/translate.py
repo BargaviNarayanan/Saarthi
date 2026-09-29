@@ -1,34 +1,35 @@
-"""Google Cloud Translation integration."""
+"""Local mock for text translation."""
 
 from __future__ import annotations
 
-import os
-
-from google.cloud import translate_v2
+import re
 
 
-class TranslationClient:
-    """Translate citizen queries and chatbot responses."""
-
-    def __init__(self, project_id: str | None = None) -> None:
-        self.project_id = project_id or os.getenv("GCP_PROJECT_ID")
-        self.client = translate_v2.Client(project=self.project_id)
+class TranslateClient:
+    """Return deterministic mock translations without cloud credentials."""
 
     def translate(
         self,
         text: str,
         target_language: str,
         source_language: str | None = None,
-    ) -> dict:
-        result = self.client.translate(
-            text,
-            target_language=target_language,
-            source_language=source_language,
-            format_="text",
-        )
+    ) -> dict[str, str]:
+        """Return a clearly marked local translation result."""
+        detected_language = source_language or self._detect_language(text)
         return {
             "original_text": text,
-            "translated_text": result["translatedText"],
-            "detected_source_language": result.get("detectedSourceLanguage"),
+            "translated_text": f"translated to {target_language}: {text}",
+            "detected_source_language": detected_language,
             "target_language": target_language,
         }
+
+    @staticmethod
+    def _detect_language(text: str) -> str:
+        if re.search(r"[\u0B80-\u0BFF]", text):
+            return "ta"
+        if re.search(r"[\u0900-\u097F]", text):
+            return "hi"
+        return "en"
+
+
+TranslationClient = TranslateClient

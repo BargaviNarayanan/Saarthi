@@ -1,13 +1,17 @@
-"""External AI service integrations for Saarthi."""
+"""Credential-free local AI service mocks for Saarthi."""
 
-from .dialogflow import DialogflowCXClient
-from .translate import TranslationClient
-from .vertex import VertexAIClient
+from .dialogflow import DialogflowClient, DialogflowCXClient
 from .speech import SpeechClient
+from .texttospeech import TextToSpeechClient
+from .translate import TranslateClient, TranslationClient
+from .vertex import VertexAIClient
 
 __all__ = [
+    "DialogflowClient",
     "DialogflowCXClient",
+    "SpeechClient",
+    "TextToSpeechClient",
+    "TranslateClient",
     "TranslationClient",
     "VertexAIClient",
-    "SpeechClient",
 ]
