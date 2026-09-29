@@ -5,7 +5,9 @@ pytest-cov
 httpx
 python-multipart
 numpy
+torch
 torchvision
 torchaudio
 transformers
+sentencepiece
 openai
